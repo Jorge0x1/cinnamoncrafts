@@ -1,0 +1,66 @@
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.formulario h3 {
+  margin: 0 0 4px;
+  color: #6C534E;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group input {
+  border: 1px solid #A1CAFF;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #F8FAFC;
+  color: #6C534E;
+  outline: none;
+}
+
+.form-group input:focus {
+  border-color: #FBAED2;
+  box-shadow: 0 0 0 3px rgba(251, 174, 210, 0.2);
+}
+
+.form-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6C534E;
+  font-size: 0.95rem;
+}
+
+.form-group input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: #FBAED2;
+}
+
+.btn-submit {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #A1CAFF 0%, #FBAED2 100%);
+  color: #6C534E;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(251, 174, 210, 0.25);
+}
+
+.form-group .form-label {
+  display: block;
+  margin: 0 0 4px 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}

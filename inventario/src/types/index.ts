@@ -1,0 +1,1 @@
+export type { Producto } from './Producto';
