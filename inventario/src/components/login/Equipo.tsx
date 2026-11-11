@@ -11,6 +11,8 @@ interface Integrante {
     usuario: string;
     puesto: string | null;
     foto: string | null;
+    // puede no venir si todavia no se corre 5_vendedor_del_dia.sql
+    veces_vendedor_del_dia?: number;
 }
 
 interface EquipoProps {
@@ -58,7 +60,15 @@ function Equipo({ onCerrar }: EquipoProps) {
                                 <Avatar usuario={i.usuario} foto={i.foto} tamano={56} />
                                 <div className="equipo-datos">
                                     <strong>{i.usuario}</strong>
-                                    {i.puesto && <span className="equipo-puesto">{i.puesto}</span>}
+                                    <div className="equipo-etiquetas">
+                                        {i.puesto && <span className="equipo-puesto">{i.puesto}</span>}
+                                        {/* solo aparece si ha sido vendedor del dia al menos una vez */}
+                                        {(i.veces_vendedor_del_dia ?? 0) > 0 && (
+                                            <span className="equipo-trofeos" title="Veces que ha sido vendedor del día">
+                                                🏆 {i.veces_vendedor_del_dia} {i.veces_vendedor_del_dia === 1 ? 'vez' : 'veces'} vendedor del día
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </li>
                         ))}
