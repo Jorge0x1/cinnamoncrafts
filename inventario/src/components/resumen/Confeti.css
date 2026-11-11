@@ -1,0 +1,53 @@
+.confeti {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.confeti-pieza {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--tam);
+  height: calc(var(--tam) * 0.45);
+  background: var(--color);
+  border-radius: 2px;
+  opacity: 0;
+  animation-name: confeti-explotar;
+  animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);
+  animation-fill-mode: forwards;
+}
+
+.confeti-pieza.redonda {
+  height: var(--tam);
+  border-radius: 50%;
+}
+
+@keyframes confeti-explotar {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(0.6);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(calc(var(--dx) * 0.8), var(--dy)) rotate(calc(var(--giro) * 0.3)) scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), calc(var(--dy) + var(--caida))) rotate(var(--giro)) scale(1);
+  }
+}
+
+/* respeta a quien tiene activado "reducir movimiento" en su celular */
+@media (prefers-reduced-motion: reduce) {
+  .confeti {
+    display: none;
+  }
+}

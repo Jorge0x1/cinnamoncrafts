@@ -5,6 +5,7 @@ import { formatoMoneda } from '../../utils/formato';
 import { useToast } from '../../hooks';
 import { IconoEliminar } from '../iconos/Iconos';
 import Avatar from '../perfil/Avatar';
+import Confeti from './Confeti';
 import type { Venta } from '../../types';
 import './Resumen.css';
 
@@ -211,6 +212,8 @@ function Resumen({ recargar, onVentaCancelada }: ResumenProps) {
                                 <h4>{formatoDia(dia.fecha)}</h4>
 
                                 <div className="vendedor-dia">
+                                    {/* confeti solo en el dia de hoy; se reproduce cada vez que se abre el resumen */}
+                                    {dia.clave === claveDia(new Date()) && dia.vendedorDelDia && <Confeti />}
                                     <span className="vendedor-dia-titulo">🏆 Vendedor del día</span>
                                     {dia.vendedorDelDia ? (
                                         <div className="vendedor-dia-perfil">
