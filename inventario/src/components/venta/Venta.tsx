@@ -22,7 +22,7 @@ interface LineaVenta {
     cantidad: number;
 }
 
-const BILLETES = [50, 100, 200, 500, 1000];
+const BILLETES = [50, 100, 200, 500];
 
 let siguienteKey = 0;
 const nuevaLinea = (): LineaVenta => ({ key: siguienteKey++, productoId: null, cantidad: 1 });

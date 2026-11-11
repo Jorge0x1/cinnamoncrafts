@@ -16,6 +16,9 @@ function useSesion() {
     const [usuario, setUsuario] = useState('');
     const [usuarioId, setUsuarioId] = useState<string | null>(null);
     const [foto, setFoto] = useState<string | null>(null);
+    const [puesto, setPuesto] = useState<string | null>(null);
+    // lo decide la funcion puede_editar_productos en supabase (segun el puesto)
+    const [puedeEditar, setPuedeEditar] = useState(false);
 
     useEffect(() => {
         const verificar = async (session: Session | null) => {
@@ -23,14 +26,16 @@ function useSesion() {
                 setUsuario('');
                 setUsuarioId(null);
                 setFoto(null);
+                setPuesto(null);
+                setPuedeEditar(false);
                 setEstado('sin-sesion');
                 return;
             }
-            const { data, error } = await supabase
-                .from('Usuarios')
-                .select('Usuario, Foto')
-                .eq('id', session.user.id)
-                .maybeSingle();
+            const [perfil, permiso] = await Promise.all([
+                supabase.from('Usuarios').select('Usuario, Foto, Puesto').eq('id', session.user.id).maybeSingle(),
+                supabase.rpc('puede_editar_productos'),
+            ]);
+            const { data, error } = perfil;
             if (error || !data) {
                 setUsuario('');
                 setEstado('no-permitido');
@@ -39,6 +44,8 @@ function useSesion() {
             setUsuario(data.Usuario as string);
             setUsuarioId(session.user.id);
             setFoto((data.Foto as string | null) ?? null);
+            setPuesto((data.Puesto as string | null) ?? null);
+            setPuedeEditar(permiso.data === true);
             setEstado('listo');
         };
 
@@ -92,7 +99,7 @@ function useSesion() {
         return null;
     }, [usuarioId, foto]);
 
-    return { estado, usuario, foto, iniciarSesion, cerrarSesion, cambiarFoto };
+    return { estado, usuario, foto, puesto, puedeEditar, iniciarSesion, cerrarSesion, cambiarFoto };
 }
 
 export default useSesion;

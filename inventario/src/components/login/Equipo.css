@@ -1,0 +1,85 @@
+.equipo-modal {
+  width: min(400px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  color: #6C534E;
+}
+
+.equipo-encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.equipo-encabezado h3 {
+  margin: 0;
+}
+
+.equipo-cerrar {
+  border: none;
+  border-radius: 999px;
+  width: 32px;
+  height: 32px;
+  background: #FBAED2;
+  color: #6C534E;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.equipo-mensaje {
+  margin: 12px 0;
+  text-align: center;
+}
+
+.equipo-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.equipo-tarjeta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid rgba(108, 83, 78, 0.12);
+  border-radius: 14px;
+}
+
+.equipo-datos {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.equipo-datos strong {
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.equipo-puesto {
+  align-self: flex-start;
+  margin-top: 4px;
+  border-radius: 999px;
+  padding: 2px 10px;
+  background: rgba(161, 202, 255, 0.3);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* boton debajo del formulario de inicio de sesion */
+.btn-equipo {
+  margin-top: 14px;
+  border: 1px solid #A1CAFF;
+  border-radius: 999px;
+  padding: 10px 20px;
+  background: #fff;
+  color: #6C534E;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}

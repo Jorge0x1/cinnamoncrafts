@@ -11,6 +11,14 @@
   box-sizing: border-box;
 }
 
+/* evita que algo que se sale de la pantalla (como el confeti) agrande la pagina
+   y haga que el celular se aleje y vuelva a acercar */
+html,
+body {
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
 body {
   margin: 0;
   min-height: 100vh;

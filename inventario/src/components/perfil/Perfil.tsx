@@ -11,11 +11,12 @@ import './Perfil.css';
 interface PerfilProps {
     usuario: string;
     foto: string | null;
+    puesto: string | null;
     onCambiarFoto: (imagen: Blob) => Promise<string | null>;
     onSalir: () => void;
 }
 
-function Perfil({ usuario, foto, onCambiarFoto, onSalir }: PerfilProps) {
+function Perfil({ usuario, foto, puesto, onCambiarFoto, onSalir }: PerfilProps) {
     const notificar = useToast();
     const [abierto, setAbierto] = useState(false);
     const [subiendo, setSubiendo] = useState(false);
@@ -97,7 +98,10 @@ function Perfil({ usuario, foto, onCambiarFoto, onSalir }: PerfilProps) {
                 <div className="perfil-menu" role="menu">
                     <div className="perfil-menu-encabezado">
                         <Avatar usuario={usuario} foto={foto} tamano={48} />
-                        <span className="perfil-nombre">{usuario}</span>
+                        <div className="perfil-datos">
+                            <span className="perfil-nombre">{usuario}</span>
+                            {puesto && <span className="perfil-puesto">{puesto}</span>}
+                        </div>
                     </div>
                     <button
                         type="button"

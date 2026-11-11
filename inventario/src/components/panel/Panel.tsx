@@ -16,11 +16,14 @@ import Perfil from '../perfil/Perfil';
 interface PanelProps {
     usuario: string;
     foto: string | null;
+    puesto: string | null;
+    // CEO y Director de Operaciones; lo decide supabase
+    puedeEditar: boolean;
     onCambiarFoto: (imagen: Blob) => Promise<string | null>;
     onSalir: () => void;
 }
 
-function Panel({ usuario, foto, onCambiarFoto, onSalir }: PanelProps) {
+function Panel({ usuario, foto, puesto, puedeEditar, onCambiarFoto, onSalir }: PanelProps) {
     const { productos, cargando, traer, insertar, editar, eliminar, vender } = useProductos();
     const notificar = useToast();
     const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
@@ -95,13 +98,13 @@ function Panel({ usuario, foto, onCambiarFoto, onSalir }: PanelProps) {
             <div className="app-header">
                 <h1>CinnamonCrafts</h1>
                 <div className="header-perfil">
-                    <Perfil usuario={usuario} foto={foto} onCambiarFoto={onCambiarFoto} onSalir={onSalir} />
+                    <Perfil usuario={usuario} foto={foto} puesto={puesto} onCambiarFoto={onCambiarFoto} onSalir={onSalir} />
                 </div>
                 <div className="header-acciones">
                     <button type="button" className="btn-header" onClick={() => setVista(vista === 'inventario' ? 'resumen' : 'inventario')}>
                         {vista === 'inventario' ? 'Resumen' : '← Inventario'}
                     </button>
-                    <Venta productos={productos} onConfirmar={registrarVenta} />
+                    {vista === 'inventario' && <Venta productos={productos} onConfirmar={registrarVenta} />}
                 </div>
             </div>
 
@@ -127,7 +130,9 @@ function Panel({ usuario, foto, onCambiarFoto, onSalir }: PanelProps) {
                 <div className="inventario-container">
                     <h2>Inventario</h2>
                     <div className="filtros-container">
-                        <button type="button" className="btn-header" onClick={() => abrirFormulario(null)}>+ Agregar producto</button>
+                        {puedeEditar && (
+                            <button type="button" className="btn-header" onClick={() => abrirFormulario(null)}>+ Agregar producto</button>
+                        )}
                         <div className="filtro-container">
                             <label htmlFor="filtro-orden">Ordenar</label>
                             <select id="filtro-orden" value={ordenSeleccionado} onChange={(e) => setOrdenSeleccionado(e.target.value)}>
@@ -166,13 +171,13 @@ function Panel({ usuario, foto, onCambiarFoto, onSalir }: PanelProps) {
                                 Cantidad={producto.Cantidad}
                                 Precio={producto.Precio}
                                 Promocion={producto.Promocion}
-                                onEditar={() => abrirFormulario(producto)}
-                                onEliminar={() => {
+                                onEditar={puedeEditar ? () => abrirFormulario(producto) : undefined}
+                                onEliminar={puedeEditar ? () => {
                                     void eliminarProducto(producto.id);
                                     if (productoSeleccionado?.id === producto.id) {
                                         cerrarFormulario();
                                     }
-                                }}
+                                } : undefined}
                             />
                         ))}
                     </div>

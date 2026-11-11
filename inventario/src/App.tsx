@@ -6,7 +6,7 @@ import './App.css';
 // decide que mostrar segun la sesion: inicio de sesion o el panel principal
 
 function App() {
-    const { estado, usuario, foto, iniciarSesion, cerrarSesion, cambiarFoto } = useSesion();
+    const { estado, usuario, foto, puesto, puedeEditar, iniciarSesion, cerrarSesion, cambiarFoto } = useSesion();
 
     return (
         <ToastProvider>
@@ -15,7 +15,14 @@ function App() {
                 <Login onEntrar={iniciarSesion} noPermitido={estado === 'no-permitido'} />
             )}
             {estado === 'listo' && (
-                <Panel usuario={usuario} foto={foto} onCambiarFoto={cambiarFoto} onSalir={() => void cerrarSesion()} />
+                <Panel
+                    usuario={usuario}
+                    foto={foto}
+                    puesto={puesto}
+                    puedeEditar={puedeEditar}
+                    onCambiarFoto={cambiarFoto}
+                    onSalir={() => void cerrarSesion()}
+                />
             )}
         </ToastProvider>
     );

@@ -61,9 +61,20 @@
   gap: 10px;
 }
 
+.perfil-datos {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .perfil-nombre {
   font-weight: 700;
   overflow-wrap: anywhere;
+}
+
+.perfil-puesto {
+  font-size: 0.82rem;
+  opacity: 0.8;
 }
 
 .perfil-cambiar,

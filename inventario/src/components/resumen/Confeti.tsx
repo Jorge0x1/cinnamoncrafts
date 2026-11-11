@@ -18,7 +18,8 @@ interface Pieza {
 function crearPiezas(): Pieza[] {
     return Array.from({ length: PIEZAS }, (_, i) => {
         const angulo = Math.random() * Math.PI - Math.PI; // hacia arriba, en abanico
-        const fuerza = 70 + Math.random() * 110;
+        // en pantallas angostas el abanico es mas corto para no salirse tanto
+        const fuerza = (70 + Math.random() * 110) * Math.min(1, window.innerWidth / 500);
         return {
             id: i,
             redonda: Math.random() < 0.3,

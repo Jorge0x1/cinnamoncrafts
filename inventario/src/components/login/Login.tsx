@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import Equipo from './Equipo';
 import './Login.css';
 
 // pantalla de inicio de sesion
@@ -15,6 +16,7 @@ function Login({ onEntrar, noPermitido }: LoginProps) {
     const [contrasena, setContrasena] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [entrando, setEntrando] = useState(false);
+    const [verEquipo, setVerEquipo] = useState(false);
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -68,6 +70,12 @@ function Login({ onEntrar, noPermitido }: LoginProps) {
                     {entrando ? 'Entrando…' : 'Entrar'}
                 </button>
             </form>
+
+            <button type="button" className="btn-equipo" onClick={() => setVerEquipo(true)}>
+                Conoce al equipo
+            </button>
+
+            {verEquipo && <Equipo onCerrar={() => setVerEquipo(false)} />}
         </div>
     );
 }

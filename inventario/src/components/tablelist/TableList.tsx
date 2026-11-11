@@ -13,8 +13,9 @@ interface TableListProps {
     Cantidad: number;
     Precio: number;
     Promocion: string;
-    onEditar: () => void;
-    onEliminar: () => void;
+    // sin estas funciones no se muestran los botones (usuarios que no pueden editar)
+    onEditar?: () => void;
+    onEliminar?: () => void;
 }
 
 function TableList({ Nombre, Cantidad, Precio, Promocion, onEditar, onEliminar }: TableListProps) {
@@ -26,7 +27,7 @@ function TableList({ Nombre, Cantidad, Precio, Promocion, onEditar, onEliminar }
 
     const confirmarEliminar = () => {
         setShowConfirm(false);
-        onEliminar();
+        onEliminar?.();
     };
 
     return (
@@ -39,14 +40,20 @@ function TableList({ Nombre, Cantidad, Precio, Promocion, onEditar, onEliminar }
                     {Promocion && <span className="badge badge-promo">🏷 {Promocion}</span>}
                 </div>
             </div>
-            <div className="item-actions">
-                <button type="button" className="btn-icono btn-editar" onClick={onEditar} aria-label={`Editar ${Nombre}`} title="Editar">
-                    <IconoEditar />
-                </button>
-                <button type="button" className="btn-icono btn-eliminar" onClick={() => setShowConfirm(true)} aria-label={`Eliminar ${Nombre}`} title="Eliminar">
-                    <IconoEliminar />
-                </button>
-            </div>
+            {(onEditar || onEliminar) && (
+                <div className="item-actions">
+                    {onEditar && (
+                        <button type="button" className="btn-icono btn-editar" onClick={onEditar} aria-label={`Editar ${Nombre}`} title="Editar">
+                            <IconoEditar />
+                        </button>
+                    )}
+                    {onEliminar && (
+                        <button type="button" className="btn-icono btn-eliminar" onClick={() => setShowConfirm(true)} aria-label={`Eliminar ${Nombre}`} title="Eliminar">
+                            <IconoEliminar />
+                        </button>
+                    )}
+                </div>
+            )}
 
             {showConfirm && createPortal(
                 <div className="modal-overlay">
