@@ -25,5 +25,5 @@ dist-ssr
 
 .env
 
-# contiene contraseñas, no subir
-supabase/1_usuarios.sql
+# scripts sql de supabase (uno contiene contraseñas), no subir
+supabase/
