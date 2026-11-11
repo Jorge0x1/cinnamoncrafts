@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../utils/supabase';
 import { formatoMoneda } from '../../utils/formato';
 import { useToast } from '../../hooks';
+import { IconoEliminar } from '../iconos/Iconos';
+import Avatar from '../perfil/Avatar';
 import type { Venta } from '../../types';
 import './Resumen.css';
 
@@ -86,17 +88,12 @@ function agruparPorDia(ventas: Venta[]): Dia[] {
 
 function calcularIndicadores(ventas: Venta[]) {
     const ahora = new Date();
-    const inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
-    const inicioSemana = new Date(inicioHoy);
-    inicioSemana.setDate(inicioHoy.getDate() - ((inicioHoy.getDay() + 6) % 7)); // lunes
     const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
 
-    const periodo = (desde: Date) => {
-        const filtradas = ventas.filter((v) => new Date(v.Fecha) >= desde);
-        return {
-            monto: filtradas.reduce((s, v) => s + Number(v.Monto), 0),
-            piezas: filtradas.reduce((s, v) => s + v.Cantidad, 0),
-        };
+    // todas las ventas registradas
+    const historico = {
+        monto: ventas.reduce((s, v) => s + Number(v.Monto), 0),
+        piezas: ventas.reduce((s, v) => s + v.Cantidad, 0),
     };
 
     const productosMes = new Map<string, { nombre: string; cantidad: number }>();
@@ -110,9 +107,7 @@ function calcularIndicadores(ventas: Venta[]) {
     const [masVendido] = [...productosMes.values()].sort((a, b) => b.cantidad - a.cantidad);
 
     return {
-        hoy: periodo(inicioHoy),
-        semana: periodo(inicioSemana),
-        mes: periodo(inicioMes),
+        historico,
         masVendido: masVendido ?? null,
     };
 }
@@ -129,6 +124,8 @@ interface ResumenProps {
 function Resumen({ recargar, onVentaCancelada }: ResumenProps) {
     const notificar = useToast();
     const [ventas, setVentas] = useState<Venta[]>([]);
+    // foto de perfil de cada vendedor (por nombre de usuario)
+    const [fotos, setFotos] = useState<Record<string, string | null>>({});
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState(false);
     const [version, setVersion] = useState(0);
@@ -139,16 +136,24 @@ function Resumen({ recargar, onVentaCancelada }: ResumenProps) {
         let cancelado = false;
         (async () => {
             setError(false);
-            const { data, error: errorConsulta } = await supabase
-                .from('Ventas')
-                .select('*')
-                .order('Fecha', { ascending: false });
+            const [respuestaVentas, respuestaUsuarios] = await Promise.all([
+                supabase.from('Ventas').select('*').order('Fecha', { ascending: false }),
+                supabase.from('Usuarios').select('Usuario, Foto'),
+            ]);
             if (cancelado) return;
-            if (errorConsulta) {
-                console.error('error al traer ventas:', errorConsulta);
+            if (respuestaVentas.error) {
+                console.error('error al traer ventas:', respuestaVentas.error);
                 setError(true);
             } else {
-                setVentas((data ?? []) as Venta[]);
+                setVentas((respuestaVentas.data ?? []) as Venta[]);
+            }
+            // las fotos son opcionales: si fallan se muestran las iniciales
+            if (respuestaUsuarios.data) {
+                const mapa: Record<string, string | null> = {};
+                for (const u of respuestaUsuarios.data as { Usuario: string; Foto: string | null }[]) {
+                    mapa[u.Usuario] = u.Foto;
+                }
+                setFotos(mapa);
             }
             setCargando(false);
         })();
@@ -179,19 +184,9 @@ function Resumen({ recargar, onVentaCancelada }: ResumenProps) {
         <div className="resumen">
             <div className="kpis">
                 <div className="kpi">
-                    <span className="kpi-titulo">Hoy</span>
-                    <strong className="kpi-valor">{formatoMoneda(indicadores.hoy.monto)}</strong>
-                    <span className="kpi-detalle">{textoPiezas(indicadores.hoy.piezas)}</span>
-                </div>
-                <div className="kpi">
-                    <span className="kpi-titulo">Esta semana</span>
-                    <strong className="kpi-valor">{formatoMoneda(indicadores.semana.monto)}</strong>
-                    <span className="kpi-detalle">{textoPiezas(indicadores.semana.piezas)}</span>
-                </div>
-                <div className="kpi">
-                    <span className="kpi-titulo">Este mes</span>
-                    <strong className="kpi-valor">{formatoMoneda(indicadores.mes.monto)}</strong>
-                    <span className="kpi-detalle">{textoPiezas(indicadores.mes.piezas)}</span>
+                    <span className="kpi-titulo">Ventas históricas</span>
+                    <strong className="kpi-valor">{formatoMoneda(indicadores.historico.monto)}</strong>
+                    <span className="kpi-detalle">{textoPiezas(indicadores.historico.piezas)} vendidas</span>
                 </div>
                 <div className="kpi kpi-destacado">
                     <span className="kpi-titulo">Más vendido del mes</span>
@@ -216,12 +211,16 @@ function Resumen({ recargar, onVentaCancelada }: ResumenProps) {
                                 <h4>{formatoDia(dia.fecha)}</h4>
 
                                 <div className="vendedor-dia">
-                                    <span>🏆 Vendedor del día</span>
-                                    <strong>
-                                        {dia.vendedorDelDia
-                                            ? `${dia.vendedorDelDia.nombre} · ${formatoMoneda(dia.vendedorDelDia.monto)}`
-                                            : 'Sin registrar'}
-                                    </strong>
+                                    <span className="vendedor-dia-titulo">🏆 Vendedor del día</span>
+                                    {dia.vendedorDelDia ? (
+                                        <div className="vendedor-dia-perfil">
+                                            <Avatar usuario={dia.vendedorDelDia.nombre} foto={fotos[dia.vendedorDelDia.nombre]} tamano={44} />
+                                            <strong className="vendedor-dia-nombre">{dia.vendedorDelDia.nombre}</strong>
+                                            <strong className="vendedor-dia-monto">{formatoMoneda(dia.vendedorDelDia.monto)}</strong>
+                                        </div>
+                                    ) : (
+                                        <strong>Sin registrar</strong>
+                                    )}
                                 </div>
 
                                 <table className="resumen-tabla">
@@ -269,7 +268,7 @@ function Resumen({ recargar, onVentaCancelada }: ResumenProps) {
                                                     aria-label={`Eliminar venta de ${v.Producto}`}
                                                     title="Eliminar venta"
                                                 >
-                                                    🗑
+                                                    <IconoEliminar tamano={16} />
                                                 </button>
                                             </li>
                                         ))}

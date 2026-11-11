@@ -1,29 +1,35 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
+import { prepararFotoPerfil } from '../utils/imagen';
 
 // manejo de sesion con supabase auth
 // el usuario escribe su nombre de usuario; la cuenta en supabase usa <usuario>@cinnamoncrafts.app
 // quien puede entrar lo decide la tabla Usuarios en la base de datos (no el codigo)
 
 const DOMINIO_CORREO = 'cinnamoncrafts.app';
+const BUCKET_FOTOS = 'avatares';
 
 export type EstadoSesion = 'cargando' | 'sin-sesion' | 'no-permitido' | 'listo';
 
 function useSesion() {
     const [estado, setEstado] = useState<EstadoSesion>('cargando');
     const [usuario, setUsuario] = useState('');
+    const [usuarioId, setUsuarioId] = useState<string | null>(null);
+    const [foto, setFoto] = useState<string | null>(null);
 
     useEffect(() => {
         const verificar = async (session: Session | null) => {
             if (!session) {
                 setUsuario('');
+                setUsuarioId(null);
+                setFoto(null);
                 setEstado('sin-sesion');
                 return;
             }
             const { data, error } = await supabase
                 .from('Usuarios')
-                .select('Usuario')
+                .select('Usuario, Foto')
                 .eq('id', session.user.id)
                 .maybeSingle();
             if (error || !data) {
@@ -32,6 +38,8 @@ function useSesion() {
                 return;
             }
             setUsuario(data.Usuario as string);
+            setUsuarioId(session.user.id);
+            setFoto((data.Foto as string | null) ?? null);
             setEstado('listo');
         };
 
@@ -57,7 +65,42 @@ function useSesion() {
         await supabase.auth.signOut();
     }, []);
 
-    return { estado, usuario, iniciarSesion, cerrarSesion };
+    // sube una nueva foto de perfil; regresa null si salio bien o el mensaje de error
+    const cambiarFoto = useCallback(async (archivo: File): Promise<string | null> => {
+        if (!usuarioId) return 'No hay sesión iniciada';
+
+        let imagen: Blob;
+        try {
+            imagen = await prepararFotoPerfil(archivo);
+        } catch (e) {
+            return e instanceof Error ? e.message : 'No se pudo procesar la imagen';
+        }
+
+        // nombre unico para que el navegador no muestre la foto anterior guardada en cache
+        const ruta = `${usuarioId}/${Date.now()}.jpg`;
+        const almacen = supabase.storage.from(BUCKET_FOTOS);
+
+        const { error: errorSubida } = await almacen.upload(ruta, imagen, { contentType: 'image/jpeg' });
+        if (errorSubida) return errorSubida.message;
+
+        const { data: { publicUrl } } = almacen.getPublicUrl(ruta);
+        const { error: errorGuardar } = await supabase.rpc('actualizar_foto', { url: publicUrl });
+        if (errorGuardar) {
+            await almacen.remove([ruta]);
+            return errorGuardar.message;
+        }
+
+        // borrar la foto anterior para no acumular archivos
+        const marcador = `/${BUCKET_FOTOS}/`;
+        if (foto?.includes(marcador)) {
+            await almacen.remove([foto.split(marcador)[1]]);
+        }
+
+        setFoto(publicUrl);
+        return null;
+    }, [usuarioId, foto]);
+
+    return { estado, usuario, foto, iniciarSesion, cerrarSesion, cambiarFoto };
 }
 
 export default useSesion;

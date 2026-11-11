@@ -8,16 +8,19 @@ import TableList from '../tablelist/TableList';
 import Formulario from '../formulario/Formulario';
 import Venta from '../venta/Venta';
 import Resumen from '../resumen/Resumen';
+import Perfil from '../perfil/Perfil';
 
 // pantalla principal (con sesion iniciada)
 // maneja la vista actual (inventario / resumen), busqueda, orden y el modal del formulario
 
 interface PanelProps {
     usuario: string;
+    foto: string | null;
+    onCambiarFoto: (archivo: File) => Promise<string | null>;
     onSalir: () => void;
 }
 
-function Panel({ usuario, onSalir }: PanelProps) {
+function Panel({ usuario, foto, onCambiarFoto, onSalir }: PanelProps) {
     const { productos, cargando, traer, insertar, editar, eliminar, vender } = useProductos();
     const notificar = useToast();
     const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
@@ -78,21 +81,22 @@ function Panel({ usuario, onSalir }: PanelProps) {
                     return a.Cantidad - b.Cantidad;
                 case 'cantidad-desc':
                     return b.Cantidad - a.Cantidad;
-                default:
-                    return 0;
+                default: {
+                    // sin orden elegido: primero los productos con promocion
+                    const tienePromo = (p: Producto) => (p.Promocion?.trim() ? 1 : 0);
+                    return tienePromo(b) - tienePromo(a);
+                }
             }
         });
     }, [ordenSeleccionado, productos, busqueda]);
 
     return (
         <div className="app-container">
-            <div className="barra-usuario">
-                <span>👤 {usuario}</span>
-                <button type="button" className="btn-salir" onClick={onSalir}>Salir</button>
-            </div>
-
             <div className="app-header">
                 <h1>CinnamonCrafts</h1>
+                <div className="header-perfil">
+                    <Perfil usuario={usuario} foto={foto} onCambiarFoto={onCambiarFoto} onSalir={onSalir} />
+                </div>
                 <div className="header-acciones">
                     <button type="button" className="btn-header" onClick={() => setVista(vista === 'inventario' ? 'resumen' : 'inventario')}>
                         {vista === 'inventario' ? 'Resumen' : '← Inventario'}

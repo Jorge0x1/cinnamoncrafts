@@ -28,21 +28,31 @@ body {
   padding: 32px 20px 48px;
 }
 
+/* computadora: titulo | botones | perfil
+   celular:     titulo | perfil
+                botones            */
 .app-header {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  grid-template-areas: 'titulo acciones perfil';
   align-items: center;
   gap: 16px;
   margin-bottom: 24px;
 }
 
 .app-container h1 {
+  grid-area: titulo;
   margin: 0;
   font-size: 2rem;
   color: #6C534E;
 }
 
+.header-perfil {
+  grid-area: perfil;
+}
+
 .header-acciones {
+  grid-area: acciones;
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -143,25 +153,6 @@ body {
   opacity: 0.8;
 }
 
-.barra-usuario {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 4px;
-  font-size: 0.9rem;
-}
-
-.btn-salir {
-  border: 1px solid rgba(108, 83, 78, 0.25);
-  border-radius: 999px;
-  padding: 4px 12px;
-  background: transparent;
-  color: #6C534E;
-  font-weight: 600;
-  cursor: pointer;
-}
-
 .cargando-app {
   padding: 48px 16px;
   text-align: center;
@@ -178,8 +169,11 @@ body {
 
 @media (max-width: 600px) {
   .app-header {
-    flex-direction: column;
-    align-items: flex-start;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'titulo perfil'
+      'acciones acciones';
+    gap: 14px 12px;
   }
 
   .filtros-container {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { formatoMoneda } from '../../utils/formato';
+import { IconoEditar, IconoEliminar } from '../iconos/Iconos';
 import './TableList.css';
 
 // tarjeta compacta de un producto del inventario
@@ -39,8 +40,12 @@ function TableList({ Nombre, Cantidad, Precio, Promocion, onEditar, onEliminar }
                 </div>
             </div>
             <div className="item-actions">
-                <button type="button" className="btn-icono btn-editar" onClick={onEditar} aria-label={`Editar ${Nombre}`} title="Editar">✎</button>
-                <button type="button" className="btn-icono btn-eliminar" onClick={() => setShowConfirm(true)} aria-label={`Eliminar ${Nombre}`} title="Eliminar">🗑</button>
+                <button type="button" className="btn-icono btn-editar" onClick={onEditar} aria-label={`Editar ${Nombre}`} title="Editar">
+                    <IconoEditar />
+                </button>
+                <button type="button" className="btn-icono btn-eliminar" onClick={() => setShowConfirm(true)} aria-label={`Eliminar ${Nombre}`} title="Eliminar">
+                    <IconoEliminar />
+                </button>
             </div>
 
             {showConfirm && createPortal(

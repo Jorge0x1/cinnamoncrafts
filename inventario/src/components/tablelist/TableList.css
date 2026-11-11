@@ -83,8 +83,11 @@
   border: none;
   border-radius: 999px;
   cursor: pointer;
-  font-size: 1rem;
   color: #6C534E;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .btn-editar {
