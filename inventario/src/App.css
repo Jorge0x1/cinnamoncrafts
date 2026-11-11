@@ -167,6 +167,15 @@ body {
   text-align: center;
 }
 
+/* en iPhone, Safari hace zoom al tocar un campo con letra menor a 16px; esto lo evita */
+@media (max-width: 900px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 @media (max-width: 600px) {
   .app-header {
     flex-direction: column;
