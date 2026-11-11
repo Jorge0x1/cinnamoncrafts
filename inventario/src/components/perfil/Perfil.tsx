@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useToast } from '../../hooks';
 import Avatar from './Avatar';
+import EditorFoto from './EditorFoto';
 import './Perfil.css';
 
 // avatar circular con la foto o la inicial del usuario
@@ -10,7 +11,7 @@ import './Perfil.css';
 interface PerfilProps {
     usuario: string;
     foto: string | null;
-    onCambiarFoto: (archivo: File) => Promise<string | null>;
+    onCambiarFoto: (imagen: Blob) => Promise<string | null>;
     onSalir: () => void;
 }
 
@@ -18,6 +19,7 @@ function Perfil({ usuario, foto, onCambiarFoto, onSalir }: PerfilProps) {
     const notificar = useToast();
     const [abierto, setAbierto] = useState(false);
     const [subiendo, setSubiendo] = useState(false);
+    const [archivoPendiente, setArchivoPendiente] = useState<File | null>(null);
     const contenedor = useRef<HTMLDivElement>(null);
     const selectorArchivo = useRef<HTMLInputElement>(null);
 
@@ -38,20 +40,25 @@ function Perfil({ usuario, foto, onCambiarFoto, onSalir }: PerfilProps) {
         };
     }, [abierto]);
 
-    const alElegirArchivo = async (e: ChangeEvent<HTMLInputElement>) => {
+    // al elegir una foto se abre la vista previa para acomodarla
+    const alElegirArchivo = (e: ChangeEvent<HTMLInputElement>) => {
         const archivo = e.target.files?.[0];
         e.target.value = ''; // permite volver a elegir la misma foto
         if (!archivo) return;
+        setAbierto(false);
+        setArchivoPendiente(archivo);
+    };
 
+    const guardarFoto = async (imagen: Blob) => {
         setSubiendo(true);
-        const error = await onCambiarFoto(archivo);
+        const error = await onCambiarFoto(imagen);
         setSubiendo(false);
 
         if (error) {
             notificar(`No se pudo cambiar la imagen: ${error}`, 'error');
         } else {
             notificar('Imagen de perfil actualizada');
-            setAbierto(false);
+            setArchivoPendiente(null);
         }
     };
 
@@ -74,8 +81,17 @@ function Perfil({ usuario, foto, onCambiarFoto, onSalir }: PerfilProps) {
                 type="file"
                 accept="image/*"
                 hidden
-                onChange={(e) => void alElegirArchivo(e)}
+                onChange={alElegirArchivo}
             />
+
+            {archivoPendiente && (
+                <EditorFoto
+                    archivo={archivoPendiente}
+                    guardando={subiendo}
+                    onCancelar={() => setArchivoPendiente(null)}
+                    onGuardar={(imagen) => void guardarFoto(imagen)}
+                />
+            )}
 
             {abierto && (
                 <div className="perfil-menu" role="menu">

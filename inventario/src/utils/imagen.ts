@@ -1,34 +1,33 @@
-// prepara una foto para usarla de perfil:
-// recorta al centro en cuadrado y la reduce para que pese poco (unos 30-60 KB)
+// utilidades para preparar la foto de perfil
 
-export async function prepararFotoPerfil(archivo: File, lado = 320): Promise<Blob> {
-    const url = URL.createObjectURL(archivo);
-    try {
-        const imagen = await cargarImagen(url);
-        const corte = Math.min(imagen.naturalWidth, imagen.naturalHeight);
-        const x = (imagen.naturalWidth - corte) / 2;
-        const y = (imagen.naturalHeight - corte) / 2;
-
-        const canvas = document.createElement('canvas');
-        canvas.width = lado;
-        canvas.height = lado;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) throw new Error('No se pudo procesar la imagen');
-        ctx.drawImage(imagen, x, y, corte, corte, 0, 0, lado, lado);
-
-        return await new Promise<Blob>((resolve, reject) => {
-            canvas.toBlob(
-                (blob) => (blob ? resolve(blob) : reject(new Error('No se pudo procesar la imagen'))),
-                'image/jpeg',
-                0.85
-            );
-        });
-    } finally {
-        URL.revokeObjectURL(url);
-    }
+export interface Recorte {
+    // esquina superior izquierda y tamaño del cuadrado a recortar, en pixeles de la imagen original
+    x: number;
+    y: number;
+    lado: number;
 }
 
-function cargarImagen(url: string): Promise<HTMLImageElement> {
+// recorta el cuadrado indicado y lo reduce para que pese poco (unos 30-60 KB)
+export function recortarImagen(imagen: HTMLImageElement, recorte: Recorte, ladoSalida = 320): Promise<Blob> {
+    const canvas = document.createElement('canvas');
+    canvas.width = ladoSalida;
+    canvas.height = ladoSalida;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return Promise.reject(new Error('No se pudo procesar la imagen'));
+
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(imagen, recorte.x, recorte.y, recorte.lado, recorte.lado, 0, 0, ladoSalida, ladoSalida);
+
+    return new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+            (blob) => (blob ? resolve(blob) : reject(new Error('No se pudo procesar la imagen'))),
+            'image/jpeg',
+            0.85
+        );
+    });
+}
+
+export function cargarImagen(url: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
         const imagen = new Image();
         imagen.onload = () => resolve(imagen);

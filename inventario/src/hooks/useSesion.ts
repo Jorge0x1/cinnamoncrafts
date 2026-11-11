@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../utils/supabase';
-import { prepararFotoPerfil } from '../utils/imagen';
 
 // manejo de sesion con supabase auth
 // el usuario escribe su nombre de usuario; la cuenta en supabase usa <usuario>@cinnamoncrafts.app
@@ -65,16 +64,9 @@ function useSesion() {
         await supabase.auth.signOut();
     }, []);
 
-    // sube una nueva foto de perfil; regresa null si salio bien o el mensaje de error
-    const cambiarFoto = useCallback(async (archivo: File): Promise<string | null> => {
+    // sube una nueva foto de perfil (ya recortada); regresa null si salio bien o el mensaje de error
+    const cambiarFoto = useCallback(async (imagen: Blob): Promise<string | null> => {
         if (!usuarioId) return 'No hay sesión iniciada';
-
-        let imagen: Blob;
-        try {
-            imagen = await prepararFotoPerfil(archivo);
-        } catch (e) {
-            return e instanceof Error ? e.message : 'No se pudo procesar la imagen';
-        }
 
         // nombre unico para que el navegador no muestre la foto anterior guardada en cache
         const ruta = `${usuarioId}/${Date.now()}.jpg`;

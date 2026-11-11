@@ -16,7 +16,7 @@ import Perfil from '../perfil/Perfil';
 interface PanelProps {
     usuario: string;
     foto: string | null;
-    onCambiarFoto: (archivo: File) => Promise<string | null>;
+    onCambiarFoto: (imagen: Blob) => Promise<string | null>;
     onSalir: () => void;
 }
 
