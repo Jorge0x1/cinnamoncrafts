@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Producto } from '../../types';
+import { useToast } from '../../hooks';
+import { formatoMoneda } from '../../utils/formato';
+import BuscadorProducto from '../buscador/BuscadorProducto';
 import './Venta.css';
 
 // modal de venta
-// permite seleccionar uno o mas productos con su cantidad,
-// calcula el total, recibe con cuanto pagaron y muestra el cambio
+// permite buscar uno o mas productos con su cantidad,
+// calcula el total, recibe con cuanto pagaron (con botones rapidos) y muestra el cambio
 
 interface VentaProps {
     productos: Producto[];
-    onConfirmar: (items: { id: number; cantidad: number }[]) => Promise<void>;
+    // regresa null si salio bien o el mensaje de error
+    onConfirmar: (items: { id: number; cantidad: number }[]) => Promise<string | null>;
 }
 
 interface LineaVenta {
@@ -18,12 +22,13 @@ interface LineaVenta {
     cantidad: number;
 }
 
+const BILLETES = [50, 100, 200, 500, 1000];
+
 let siguienteKey = 0;
 const nuevaLinea = (): LineaVenta => ({ key: siguienteKey++, productoId: null, cantidad: 1 });
 
-const formatoMoneda = (valor: number) => `$${valor.toFixed(2)}`;
-
 function Venta({ productos, onConfirmar }: VentaProps) {
+    const notificar = useToast();
     const [abierto, setAbierto] = useState(false);
     const [lineas, setLineas] = useState<LineaVenta[]>([nuevaLinea()]);
     const [pago, setPago] = useState('');
@@ -67,8 +72,13 @@ function Venta({ productos, onConfirmar }: VentaProps) {
     const confirmar = async () => {
         if (!puedeConfirmar) return;
         setGuardando(true);
-        await onConfirmar(lineasValidas.map((l) => ({ id: l.productoId as number, cantidad: l.cantidad })));
+        const error = await onConfirmar(lineasValidas.map((l) => ({ id: l.productoId as number, cantidad: l.cantidad })));
         setGuardando(false);
+        if (error) {
+            notificar(`No se pudo registrar la venta: ${error}`, 'error');
+            return;
+        }
+        notificar(cambio > 0 ? `Venta registrada · Cambio: ${formatoMoneda(cambio)}` : 'Venta registrada');
         setAbierto(false);
     };
 
@@ -91,38 +101,55 @@ function Venta({ productos, onConfirmar }: VentaProps) {
 
                                 return (
                                     <div key={linea.key} className="venta-linea">
-                                        <select
-                                            value={linea.productoId ?? ''}
-                                            onChange={(e) => actualizarLinea(linea.key, { productoId: e.target.value ? Number(e.target.value) : null })}
-                                        >
-                                            <option value="">Selecciona un producto</option>
-                                            {opciones.map((p) => (
-                                                <option key={p.id} value={p.id} disabled={p.Cantidad <= 0}>
-                                                    {p.Nombre} — {formatoMoneda(p.Precio)} ({p.Cantidad} disp.)
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            max={producto?.Cantidad}
-                                            value={linea.cantidad === 0 ? '' : linea.cantidad}
-                                            onChange={(e) => actualizarLinea(linea.key, { cantidad: Math.max(0, Math.floor(Number(e.target.value) || 0)) })}
-                                            className={sinStock ? 'input-error' : ''}
-                                            aria-label="Cantidad"
-                                        />
-                                        <span className="venta-subtotal">
-                                            {producto ? formatoMoneda(producto.Precio * linea.cantidad) : '—'}
-                                        </span>
-                                        <button
-                                            type="button"
-                                            className="btn-quitar"
-                                            onClick={() => quitarLinea(linea.key)}
-                                            disabled={lineas.length === 1}
-                                            aria-label="Quitar producto"
-                                        >
-                                            ✕
-                                        </button>
+                                        <div className="venta-linea-producto">
+                                            <BuscadorProducto
+                                                productos={opciones}
+                                                seleccionado={producto}
+                                                onSeleccionar={(id) => actualizarLinea(linea.key, { productoId: id })}
+                                            />
+                                        </div>
+                                        <div className="venta-linea-detalle">
+                                            <div className="stepper">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => actualizarLinea(linea.key, { cantidad: Math.max(1, linea.cantidad - 1) })}
+                                                    disabled={linea.cantidad <= 1}
+                                                    aria-label="Menos"
+                                                >
+                                                    −
+                                                </button>
+                                                <input
+                                                    type="number"
+                                                    inputMode="numeric"
+                                                    min="1"
+                                                    max={producto?.Cantidad}
+                                                    value={linea.cantidad === 0 ? '' : linea.cantidad}
+                                                    onChange={(e) => actualizarLinea(linea.key, { cantidad: Math.max(0, Math.floor(Number(e.target.value) || 0)) })}
+                                                    className={sinStock ? 'input-error' : ''}
+                                                    aria-label="Cantidad"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => actualizarLinea(linea.key, { cantidad: linea.cantidad + 1 })}
+                                                    disabled={producto ? linea.cantidad >= producto.Cantidad : false}
+                                                    aria-label="Más"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                            <span className="venta-subtotal">
+                                                {producto ? formatoMoneda(producto.Precio * linea.cantidad) : '—'}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                className="btn-quitar"
+                                                onClick={() => quitarLinea(linea.key)}
+                                                disabled={lineas.length === 1}
+                                                aria-label="Quitar producto"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
                                         {sinStock && (
                                             <span className="venta-aviso">Solo hay {producto?.Cantidad} disponibles</span>
                                         )}
@@ -143,19 +170,35 @@ function Venta({ productos, onConfirmar }: VentaProps) {
                         <div className="venta-resumen">
                             <div className="venta-fila">
                                 <span>Total</span>
-                                <strong>{formatoMoneda(total)}</strong>
+                                <strong className="venta-total">{formatoMoneda(total)}</strong>
                             </div>
                             <div className="venta-fila">
                                 <label htmlFor="venta-pago">Pagó con</label>
                                 <input
                                     id="venta-pago"
                                     type="number"
+                                    inputMode="decimal"
                                     min="0"
                                     step="0.01"
                                     placeholder="0.00"
                                     value={pago}
                                     onChange={(e) => setPago(e.target.value)}
                                 />
+                            </div>
+                            <div className="pago-rapido">
+                                <button type="button" onClick={() => setPago(total.toFixed(2))} disabled={total === 0}>
+                                    Exacto
+                                </button>
+                                {BILLETES.filter((b) => b >= total).map((b) => (
+                                    <button
+                                        type="button"
+                                        key={b}
+                                        className={pagoNumero === b ? 'activo' : ''}
+                                        onClick={() => setPago(String(b))}
+                                    >
+                                        {formatoMoneda(b).replace('.00', '')}
+                                    </button>
+                                ))}
                             </div>
                             <div className={`venta-fila venta-cambio ${pago !== '' && cambio < 0 ? 'falta' : ''}`}>
                                 <span>{pago !== '' && cambio < 0 ? 'Falta' : 'Cambio'}</span>

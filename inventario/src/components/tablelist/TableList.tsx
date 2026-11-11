@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { formatoMoneda } from '../../utils/formato';
 import './TableList.css';
 
-// componente que renderiza un item del inventario
-// muestra detalles y ofrece botones para editar o eliminar
+// tarjeta compacta de un producto del inventario
+// muestra nombre, precio, stock y promocion en poco espacio, con botones para editar o eliminar
 // uso de portal para el modal de confirmacion para evitar problemas de posicion
 
 interface TableListProps {
@@ -18,12 +19,9 @@ interface TableListProps {
 function TableList({ Nombre, Cantidad, Precio, Promocion, onEditar, onEliminar }: TableListProps) {
     const [showConfirm, setShowConfirm] = useState(false);
 
-    // calcular clase visual segun nivel de stock
+    // nivel de stock para el color del borde y la etiqueta
     const stockClass = Cantidad >= 10 ? 'stock-alto' : Cantidad >= 5 ? 'stock-medio' : 'stock-bajo';
-
-    const handleEliminar = () => {
-        setShowConfirm(true);
-    };
+    const textoStock = Cantidad <= 0 ? 'Agotado' : Cantidad < 5 ? `Quedan ${Cantidad}` : `${Cantidad} pzs`;
 
     const confirmarEliminar = () => {
         setShowConfirm(false);
@@ -32,17 +30,17 @@ function TableList({ Nombre, Cantidad, Precio, Promocion, onEditar, onEliminar }
 
     return (
         <div className={`table-item ${stockClass}`}>
-            <div className="item-header">
+            <div className="item-info">
                 <h4>{Nombre}</h4>
-            </div>
-            <div className="item-details">
-                <p><strong>Cantidad:</strong> {Cantidad} unidades</p>
-                <p><strong>Precio:</strong> ${Precio.toFixed(2)}</p>
-                <p><strong>Promoción:</strong> {Promocion || 'Sin promoción'}</p>
+                <div className="item-meta">
+                    <span className="item-precio">{formatoMoneda(Precio)}</span>
+                    <span className={`badge badge-${stockClass}`}>{textoStock}</span>
+                    {Promocion && <span className="badge badge-promo">🏷 {Promocion}</span>}
+                </div>
             </div>
             <div className="item-actions">
-                <button type="button" className="btn-editar" onClick={onEditar}>✎ Editar</button>
-                <button type="button" className="btn-eliminar" onClick={handleEliminar}>🗑 Eliminar</button>
+                <button type="button" className="btn-icono btn-editar" onClick={onEditar} aria-label={`Editar ${Nombre}`} title="Editar">✎</button>
+                <button type="button" className="btn-icono btn-eliminar" onClick={() => setShowConfirm(true)} aria-label={`Eliminar ${Nombre}`} title="Eliminar">🗑</button>
             </div>
 
             {showConfirm && createPortal(

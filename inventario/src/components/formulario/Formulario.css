@@ -64,3 +64,23 @@
   font-size: 0.85rem;
   font-weight: 600;
 }
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.form-actions .btn-submit {
+  flex: 1;
+}
+
+.btn-cancelar-form {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #FFF2B2;
+  color: #6C534E;
+  font-weight: 600;
+  cursor: pointer;
+}

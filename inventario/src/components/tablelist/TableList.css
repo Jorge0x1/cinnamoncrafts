@@ -1,9 +1,13 @@
 .table-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   border: 1px solid rgba(108, 83, 78, 0.12);
-  border-radius: 16px;
-  padding: 16px;
+  border-radius: 14px;
+  padding: 12px 14px;
   background: #ffffff;
-  box-shadow: 0 8px 20px rgba(108, 83, 78, 0.06);
+  box-shadow: 0 6px 16px rgba(108, 83, 78, 0.05);
 }
 
 .table-item.stock-alto {
@@ -11,36 +15,86 @@
 }
 
 .table-item.stock-medio {
-  border-left: 6px solid #FFF2B2;
+  border-left: 6px solid #FFE27A;
 }
 
 .table-item.stock-bajo {
   border-left: 6px solid #FBAED2;
 }
 
-.item-header h4 {
-  margin: 0 0 10px;
+.item-info {
+  min-width: 0;
+}
+
+.item-info h4 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  line-height: 1.3;
   color: #6C534E;
 }
 
-.item-details {
-  display: grid;
+.item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
-  margin-bottom: 12px;
 }
 
-.item-details p {
-  margin: 0;
-  color: #6C534E;
+.item-precio {
+  font-weight: 700;
+  margin-right: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-stock-alto {
+  background: rgba(161, 202, 255, 0.3);
+}
+
+.badge-stock-medio {
+  background: #FFF2B2;
+}
+
+.badge-stock-bajo {
+  background: rgba(251, 174, 210, 0.45);
+}
+
+.badge-promo {
+  background: #F3E8FF;
+  white-space: normal;
 }
 
 .item-actions {
   display: flex;
-  gap: 10px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
-.btn-editar,
-.btn-eliminar,
+.btn-icono {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #6C534E;
+}
+
+.btn-editar {
+  background: #A1CAFF;
+}
+
+.btn-eliminar {
+  background: #FBAED2;
+}
+
 .btn-cancelar,
 .btn-confirmar {
   border: none;
@@ -48,26 +102,15 @@
   padding: 8px 12px;
   cursor: pointer;
   font-weight: 600;
-}
-
-.btn-editar {
-  background: #A1CAFF;
-  color: #6C534E;
-}
-
-.btn-eliminar {
-  background: #FBAED2;
   color: #6C534E;
 }
 
 .btn-cancelar {
   background: #FFF2B2;
-  color: #6C534E;
 }
 
 .btn-confirmar {
   background: #FBAED2;
-  color: #6C534E;
 }
 
 .modal-overlay {
@@ -77,6 +120,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 16px;
   z-index: 1000;
 }
 
@@ -84,7 +128,7 @@
   background: #F8FAFC;
   border-radius: 16px;
   padding: 20px;
-  min-width: 300px;
+  min-width: min(300px, 100%);
   box-shadow: 0 14px 34px rgba(108, 83, 78, 0.16);
 }
 

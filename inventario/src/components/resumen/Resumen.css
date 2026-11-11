@@ -1,0 +1,207 @@
+.resumen {
+  display: grid;
+  gap: 16px;
+  color: #6C534E;
+}
+
+/* indicadores */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(108, 83, 78, 0.12);
+  border-top: 4px solid #A1CAFF;
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 8px 20px rgba(108, 83, 78, 0.06);
+  min-width: 0;
+}
+
+.kpi-destacado {
+  border-top-color: #FBAED2;
+}
+
+.kpi-titulo {
+  font-size: 0.82rem;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.kpi-valor {
+  font-size: 1.5rem;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-texto {
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.kpi-detalle {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+/* ventas por dia */
+.resumen-container {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(108, 83, 78, 0.12);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 12px 30px rgba(108, 83, 78, 0.08);
+}
+
+.resumen-container h2 {
+  margin: 0 0 16px;
+}
+
+.resumen-dias {
+  display: grid;
+  gap: 14px;
+}
+
+.resumen-mensaje {
+  margin: 16px 0;
+  text-align: center;
+}
+
+.resumen-dia {
+  background: #fff;
+  border: 1px solid rgba(108, 83, 78, 0.12);
+  border-left: 6px solid #A1CAFF;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.resumen-dia h4 {
+  margin: 0 0 8px;
+}
+
+.vendedor-dia {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: #FFF8D6;
+  font-size: 0.92rem;
+}
+
+.resumen-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.resumen-tabla th,
+.resumen-tabla td {
+  padding: 6px 4px;
+  text-align: left;
+}
+
+.resumen-tabla th {
+  font-size: 0.85rem;
+  border-bottom: 1px solid rgba(108, 83, 78, 0.15);
+}
+
+.resumen-tabla tbody tr + tr td {
+  border-top: 1px dashed rgba(108, 83, 78, 0.1);
+}
+
+.resumen-tabla .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.resumen-tabla tfoot td {
+  border-top: 2px solid rgba(251, 174, 210, 0.7);
+  font-weight: 700;
+  padding-top: 8px;
+}
+
+/* detalle de cada venta */
+.resumen-detalle {
+  margin-top: 10px;
+}
+
+.resumen-detalle summary {
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+.resumen-detalle ul {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.resumen-detalle li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #F8FAFC;
+}
+
+.detalle-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.detalle-info small {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.detalle-monto {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.resumen-detalle .btn-icono {
+  width: 32px;
+  height: 32px;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.aviso-regreso {
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+@media (max-width: 600px) {
+  .resumen-container {
+    padding: 18px 14px;
+  }
+
+  .resumen-dia {
+    padding: 12px;
+  }
+
+  .kpis {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .kpi-valor {
+    font-size: 1.2rem;
+  }
+}

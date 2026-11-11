@@ -1,0 +1,88 @@
+.buscador input {
+  width: 100%;
+  border: 1px solid #A1CAFF;
+  border-radius: 10px;
+  padding: 9px 12px;
+  background: #fff;
+  color: #6C534E;
+  font: inherit;
+}
+
+.buscador input:focus {
+  outline: none;
+  border-color: #FBAED2;
+  box-shadow: 0 0 0 3px rgba(251, 174, 210, 0.2);
+}
+
+.buscador-lista {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid rgba(108, 83, 78, 0.15);
+  border-radius: 12px;
+}
+
+.buscador-lista button {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: transparent;
+  color: #6C534E;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.buscador-lista button:hover:not(:disabled) {
+  background: rgba(161, 202, 255, 0.2);
+}
+
+.buscador-lista button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.buscador-lista small,
+.buscador-seleccionado small {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.buscador-vacio {
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.buscador-seleccionado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.buscador-seleccionado-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.btn-cambiar {
+  flex-shrink: 0;
+  border: 1px solid #A1CAFF;
+  border-radius: 999px;
+  padding: 4px 12px;
+  background: #fff;
+  color: #6C534E;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}

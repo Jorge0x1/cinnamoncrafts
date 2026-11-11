@@ -1,116 +1,68 @@
-import { useState, useEffect } from 'react';
-import { supabase } from "../utils/supabase";
+import { useCallback, useEffect, useState } from 'react';
+import { supabase } from '../utils/supabase';
 import type { Producto } from '../types';
+
+// acceso al inventario en supabase
+// cada operacion regresa null si salio bien o un mensaje de error para mostrarlo al usuario
+
+export type Resultado = string | null;
 
 function useProductos() {
     const [productos, setProductos] = useState<Producto[]>([]);
+    const [cargando, setCargando] = useState(true);
+
+    const traer = useCallback(async () => {
+        const { data, error } = await supabase.from('Inventario').select('*');
+        if (error) {
+            console.error('error al traer productos:', error);
+        } else {
+            setProductos((data ?? []) as Producto[]);
+        }
+        setCargando(false);
+    }, []);
 
     useEffect(() => {
-        (async () => {
-            const { data, error } = await supabase.from('Inventario').select('*')
-            if (error) {
-                console.error('supabase select error:', error)
-            }
-            else if (data) {
-                console.log('supabase fetched productos:', data)
-                setProductos(data as Producto[])
-            }
-        })()
-        // traer datos al montar el componente
-    }, [])
+        void traer();
+    }, [traer]);
 
-    const traer = async () => {
-        const { data, error } = await supabase.from('Inventario').select('*')
-        if (error) {
-            console.error('Supabase traer error:', error)
-            return
-        }
-        if (data) {
-            console.log('Supabase traer productos:', data)
-            setProductos(data as Producto[])
-        }
-        // funcion reutilizable para recargar los datos
-    }
+    const insertar = async (producto: Omit<Producto, 'id'>): Promise<Resultado> => {
+        const { error } = await supabase.from('Inventario').insert(producto);
+        await traer();
+        return error ? error.message : null;
+    };
 
-    const insertar = async (producto: Omit<Producto, 'id'>) => {
-        try {
-            const { error } = await supabase.from('Inventario').insert(producto)
-            if (error) {
-                console.error('error al insertar producto:', error);
-            }
-            // recargar lista despues de insertar
-            await traer();
-        } 
-        catch (error) {
-            console.error('error al insertar producto:', error);
-        }
-    }
-    
-    const editar = async (id: number, producto: Omit<Producto, 'id'>) => {
-        try {
-            console.log('editar producto:', { id, producto })
-            const { data, error } = await supabase
-                .from('Inventario')
-                .update(producto)
-                .eq('id', id)
-                .select('*')
-            if (error) {
-                console.error('error al editar producto:', error);
-            } else if (!data || data.length === 0) {
-                console.warn('la actualizacion no afecto filas. revisar policies en supabase')
-            } else {
-                console.log('supabase editar response:', data)
-            }
-            // recargar lista para sincronizar ui
-            await traer();
-        } 
-        catch (error) {
-            console.error('error al editar producto:', error);
-        }
-    }
+    const editar = async (id: number, producto: Omit<Producto, 'id'>): Promise<Resultado> => {
+        const { data, error } = await supabase.from('Inventario').update(producto).eq('id', id).select('id');
+        await traer();
+        if (error) return error.message;
+        if (!data || data.length === 0) return 'no se encontró el producto';
+        return null;
+    };
 
-    const eliminar = async (id: number) => {
-        try {
-            const { error } = await supabase.from('Inventario').delete().eq('id', id)
-            if (error) {
-                console.error('error al eliminar producto:', error);
-            }
-            await traer();
-        } 
-        catch (error) {
-            console.error('error al eliminar producto:', error);
-        }
-    }
+    const eliminar = async (id: number): Promise<Resultado> => {
+        const { data, error } = await supabase.from('Inventario').delete().eq('id', id).select('id');
+        await traer();
+        if (error) return error.message;
+        if (!data || data.length === 0) return 'no se encontró el producto';
+        return null;
+    };
 
-    // registra una venta descontando del inventario la cantidad vendida de cada producto
-    const vender = async (items: { id: number; cantidad: number }[]) => {
-        try {
-            for (const item of items) {
-                const producto = productos.find((p) => p.id === item.id)
-                if (!producto) continue
-                const { error } = await supabase
-                    .from('Inventario')
-                    .update({ Cantidad: Math.max(0, producto.Cantidad - item.cantidad) })
-                    .eq('id', item.id)
-                if (error) {
-                    console.error('error al registrar venta:', error);
-                }
-            }
-            await traer();
-        }
-        catch (error) {
-            console.error('error al registrar venta:', error);
-        }
-    }
+    // la funcion registrar_venta (en supabase) valida stock, descuenta inventario y guarda el vendedor
+    const vender = async (items: { id: number; cantidad: number }[]): Promise<Resultado> => {
+        const { error } = await supabase.rpc('registrar_venta', { items });
+        await traer();
+        return error ? error.message : null;
+    };
 
     return {
         productos,
+        cargando,
         traer,
         insertar,
         editar,
         eliminar,
-        vender
-    }
+        vender,
+    };
 }
 
 export default useProductos;

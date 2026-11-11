@@ -11,9 +11,10 @@ interface FormularioProps {
     actualizar: (id: number, producto: Omit<Producto, 'id'>) => Promise<void>;
     productoEditar: Producto | null;
     setProductoEditar: (producto: Producto | null) => void;
+    onCerrar?: () => void;
 }
 
-function Formulario({ insertar, actualizar, productoEditar, setProductoEditar }: FormularioProps) {
+function Formulario({ insertar, actualizar, productoEditar, setProductoEditar, onCerrar }: FormularioProps) {
     const [Nombre, setNombre] = useState(productoEditar?.Nombre ?? '');
     const [Precio, setPrecio] = useState(productoEditar?.Precio ?? 0);
     const [Cantidad, setCantidad] = useState(productoEditar?.Cantidad ?? 0);
@@ -60,6 +61,7 @@ function Formulario({ insertar, actualizar, productoEditar, setProductoEditar }:
         setCantidad(0);
         setPrecio(0);
         setPromocion('');
+        onCerrar?.();
     };
 
     return (
@@ -81,7 +83,12 @@ function Formulario({ insertar, actualizar, productoEditar, setProductoEditar }:
                 <label htmlFor="form-promocion" className="form-label">Promoción</label>
                 <input id="form-promocion" type="text" placeholder="Promoción" value={Promocion} onChange={(e) => setPromocion(e.target.value)} />
             </div>
-            <button type="submit" className="btn-submit">{productoEditar ? 'Actualizar' : 'Guardar'}</button>
+            <div className="form-actions">
+                {onCerrar && (
+                    <button type="button" className="btn-cancelar-form" onClick={onCerrar}>Cancelar</button>
+                )}
+                <button type="submit" className="btn-submit">{productoEditar ? 'Actualizar' : 'Guardar'}</button>
+            </div>
         </form>
     );
 }

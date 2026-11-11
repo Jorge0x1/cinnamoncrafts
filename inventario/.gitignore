@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 .env
+
+# contiene contraseñas, no subir
+supabase/1_usuarios.sql
