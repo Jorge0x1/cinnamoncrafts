@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useProductos, useToast } from '../../hooks';
-import type { Resultado } from '../../hooks';
+import { useProductos, useToast, useVentasPersonalizadas } from '../../hooks';
+import type { ItemPersonalizado, Resultado } from '../../hooks';
 import type { Producto } from '../../types';
 import { normalizar } from '../../utils/formato';
 import TableList from '../tablelist/TableList';
 import Formulario from '../formulario/Formulario';
 import Venta from '../venta/Venta';
+import VentaPersonalizada from '../venta/VentaPersonalizada';
+import TarjetaPersonalizada from '../tablelist/TarjetaPersonalizada';
 import Resumen from '../resumen/Resumen';
 import Perfil from '../perfil/Perfil';
 
@@ -25,7 +27,10 @@ interface PanelProps {
 
 function Panel({ usuario, foto, puesto, puedeEditar, onCambiarFoto, onSalir }: PanelProps) {
     const { productos, cargando, traer, insertar, editar, eliminar, vender } = useProductos();
+    const personalizadas = useVentasPersonalizadas();
     const notificar = useToast();
+    // que lista se muestra: productos con stock o personalizados vendidos (sobre pedido)
+    const [catalogo, setCatalogo] = useState<'normales' | 'personalizados'>('normales');
     const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
     const [ordenSeleccionado, setOrdenSeleccionado] = useState('');
     const [busqueda, setBusqueda] = useState('');
@@ -54,6 +59,16 @@ function Panel({ usuario, foto, puesto, puedeEditar, onCambiarFoto, onSalir }: P
         const error = await vender(items);
         if (!error) setVentasRegistradas((n) => n + 1);
         return error;
+    };
+
+    const registrarVentaPersonalizada = async (items: ItemPersonalizado[]) => {
+        const error = await personalizadas.registrar(items);
+        if (!error) setCatalogo('personalizados');
+        return error;
+    };
+
+    const eliminarVentaPersonalizada = async (id: number) => {
+        avisar(await personalizadas.eliminar(id), 'Venta personalizada eliminada', 'No se pudo eliminar');
     };
 
     const abrirFormulario = (producto: Producto | null) => {
@@ -93,6 +108,15 @@ function Panel({ usuario, foto, puesto, puedeEditar, onCambiarFoto, onSalir }: P
         });
     }, [ordenSeleccionado, productos, busqueda]);
 
+    // personalizados: los mas recientes primero; se busca por nombre o descripcion
+    const personalizadasVisibles = useMemo(() => {
+        const texto = normalizar(busqueda);
+        if (!texto) return personalizadas.ventas;
+        return personalizadas.ventas.filter(
+            (v) => normalizar(v.Producto).includes(texto) || normalizar(v.Descripcion).includes(texto)
+        );
+    }, [personalizadas.ventas, busqueda]);
+
     return (
         <div className="app-container">
             <div className="app-header">
@@ -105,6 +129,7 @@ function Panel({ usuario, foto, puesto, puedeEditar, onCambiarFoto, onSalir }: P
                         {vista === 'inventario' ? 'Resumen' : '← Inventario'}
                     </button>
                     {vista === 'inventario' && <Venta productos={productos} onConfirmar={registrarVenta} />}
+                    {vista === 'inventario' && puedeEditar && <VentaPersonalizada onConfirmar={registrarVentaPersonalizada} />}
                 </div>
             </div>
 
@@ -124,12 +149,21 @@ function Panel({ usuario, foto, puesto, puedeEditar, onCambiarFoto, onSalir }: P
                 document.body
             )}
 
-            {vista === 'resumen' && <Resumen recargar={ventasRegistradas} onVentaCancelada={() => void traer()} />}
+            {vista === 'resumen' && (
+                <Resumen
+                    puedeEditar={puedeEditar}
+                    recargar={ventasRegistradas}
+                    onVentaCancelada={() => {
+                        void traer();
+                        void personalizadas.traer();
+                    }}
+                />
+            )}
 
             {vista === 'inventario' && (
                 <div className="inventario-container">
                     <h2>Inventario</h2>
-                    <div className="filtros-container">
+                    {catalogo === 'normales' && <div className="filtros-container">
                         {puedeEditar && (
                             <button type="button" className="btn-header" onClick={() => abrirFormulario(null)}>+ Agregar producto</button>
                         )}
@@ -145,6 +179,23 @@ function Panel({ usuario, foto, puesto, puedeEditar, onCambiarFoto, onSalir }: P
                                 <option value="cantidad-desc">Cantidad ↓</option>
                             </select>
                         </div>
+                    </div>}
+
+                    <div className="switch-catalogo" role="group" aria-label="Tipo de productos">
+                        <button
+                            type="button"
+                            aria-pressed={catalogo === 'normales'}
+                            onClick={() => setCatalogo('normales')}
+                        >
+                            Productos
+                        </button>
+                        <button
+                            type="button"
+                            aria-pressed={catalogo === 'personalizados'}
+                            onClick={() => setCatalogo('personalizados')}
+                        >
+                            Personalizados
+                        </button>
                     </div>
 
                     <input
@@ -156,14 +207,36 @@ function Panel({ usuario, foto, puesto, puedeEditar, onCambiarFoto, onSalir }: P
                         aria-label="Buscar producto"
                     />
 
-                    {cargando && <p className="lista-mensaje">Cargando productos…</p>}
-                    {!cargando && productosVisibles.length === 0 && (
+                    {catalogo === 'personalizados' && (
+                        <>
+                            {personalizadas.cargando && <p className="lista-mensaje">Cargando…</p>}
+                            {!personalizadas.cargando && personalizadasVisibles.length === 0 && (
+                                <p className="lista-mensaje">
+                                    {busqueda
+                                        ? `No hay personalizados que coincidan con "${busqueda}"`
+                                        : 'Todavía no hay ventas personalizadas'}
+                                </p>
+                            )}
+                            <div className="items-list">
+                                {personalizadasVisibles.map((venta) => (
+                                    <TarjetaPersonalizada
+                                        key={venta.id}
+                                        venta={venta}
+                                        onEliminar={puedeEditar ? () => void eliminarVentaPersonalizada(venta.id) : undefined}
+                                    />
+                                ))}
+                            </div>
+                        </>
+                    )}
+
+                    {catalogo === 'normales' && cargando && <p className="lista-mensaje">Cargando productos…</p>}
+                    {catalogo === 'normales' && !cargando && productosVisibles.length === 0 && (
                         <p className="lista-mensaje">
                             {busqueda ? `No hay productos que coincidan con "${busqueda}"` : 'Todavía no hay productos'}
                         </p>
                     )}
 
-                    <div className="items-list">
+                    {catalogo === 'normales' && <div className="items-list">
                         {productosVisibles.map((producto) => (
                             <TableList
                                 key={producto.id}
@@ -180,7 +253,7 @@ function Panel({ usuario, foto, puesto, puedeEditar, onCambiarFoto, onSalir }: P
                                 } : undefined}
                             />
                         ))}
-                    </div>
+                    </div>}
                 </div>
             )}
         </div>

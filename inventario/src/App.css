@@ -216,3 +216,31 @@ body {
     white-space: nowrap;
   }
 }
+
+/* switch entre productos normales y personalizados */
+.switch-catalogo {
+  display: flex;
+  padding: 4px;
+  margin-bottom: 12px;
+  border-radius: 999px;
+  background: rgba(161, 202, 255, 0.2);
+  border: 1px solid rgba(161, 202, 255, 0.6);
+}
+
+.switch-catalogo button {
+  flex: 1;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: transparent;
+  color: #6C534E;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.switch-catalogo button[aria-pressed='true'] {
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(108, 83, 78, 0.12);
+}

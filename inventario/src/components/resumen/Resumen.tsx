@@ -6,12 +6,29 @@ import { useToast } from '../../hooks';
 import { IconoEliminar } from '../iconos/Iconos';
 import Avatar from '../perfil/Avatar';
 import Confeti from './Confeti';
-import type { Venta } from '../../types';
+import type { Venta, VentaPersonalizada } from '../../types';
 import './Resumen.css';
 
 // vista de resumen (dashboard de ventas)
 // arriba: indicadores (hoy, semana, mes, mas vendido del mes)
 // abajo: ventas agrupadas por dia, con vendedor del dia, total y el detalle para cancelar ventas
+
+// venta normal o personalizada (sobre pedido) en un mismo formato
+// las personalizadas solo muestran "Personalizado" y lo que se cobro
+type Registro = Venta & { tipo: 'normal' | 'personalizada' };
+
+const NOMBRE_PERSONALIZADO = 'Personalizado';
+
+const desdePersonalizada = (v: VentaPersonalizada): Registro => ({
+    tipo: 'personalizada',
+    id: v.id,
+    Fecha: v.Fecha,
+    ProductoId: null,
+    Producto: NOMBRE_PERSONALIZADO,
+    Cantidad: 1,
+    Monto: Number(v.Precio),
+    Vendedor: v.Vendedor,
+});
 
 interface ProductoDelDia {
     clave: string;
@@ -24,7 +41,7 @@ interface Dia {
     clave: string;
     fecha: Date;
     productos: ProductoDelDia[];
-    ventas: Venta[];
+    ventas: Registro[];
     total: number;
     piezas: number;
     vendedorDelDia: { nombre: string; monto: number } | null;
@@ -41,11 +58,16 @@ const formatoDia = (fecha: Date) => {
 
 const formatoHora = (fecha: Date) => fecha.toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' });
 
-// agrupar por id si existe, si no por nombre (producto eliminado)
-const claveProducto = (venta: Venta) => (venta.ProductoId !== null ? `id-${venta.ProductoId}` : `nombre-${venta.Producto}`);
+// agrupar por id si existe, si no por nombre (producto eliminado); los personalizados van todos juntos
+const claveProducto = (venta: Registro) => {
+    if (venta.tipo === 'personalizada') return 'personalizado';
+    return venta.ProductoId !== null ? `id-${venta.ProductoId}` : `nombre-${venta.Producto}`;
+};
 
-function agruparPorDia(ventas: Venta[]): Dia[] {
-    const dias = new Map<string, { fecha: Date; ventas: Venta[] }>();
+const claveRegistro = (v: Registro) => `${v.tipo}-${v.id}`;
+
+function agruparPorDia(ventas: Registro[]): Dia[] {
+    const dias = new Map<string, { fecha: Date; ventas: Registro[] }>();
 
     for (const venta of ventas) {
         const fecha = new Date(venta.Fecha);
@@ -87,7 +109,7 @@ function agruparPorDia(ventas: Venta[]): Dia[] {
         });
 }
 
-function calcularIndicadores(ventas: Venta[]) {
+function calcularIndicadores(ventas: Registro[]) {
     const ahora = new Date();
     const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
 
@@ -99,7 +121,8 @@ function calcularIndicadores(ventas: Venta[]) {
 
     const productosMes = new Map<string, { nombre: string; cantidad: number }>();
     for (const v of ventas) {
-        if (new Date(v.Fecha) < inicioMes) continue;
+        // los personalizados son piezas unicas, no cuentan para el mas vendido
+        if (v.tipo === 'personalizada' || new Date(v.Fecha) < inicioMes) continue;
         const k = claveProducto(v);
         const actual = productosMes.get(k) ?? { nombre: v.Producto, cantidad: 0 };
         actual.cantidad += v.Cantidad;
@@ -116,29 +139,32 @@ function calcularIndicadores(ventas: Venta[]) {
 const textoPiezas = (n: number) => `${n} ${n === 1 ? 'pieza' : 'piezas'}`;
 
 interface ResumenProps {
+    // CEO y Director: pueden eliminar ventas personalizadas
+    puedeEditar: boolean;
     // cambia cada vez que se registra una venta para volver a cargar los datos
     recargar: number;
-    // avisa que se cancelo una venta para recargar el inventario
+    // avisa que se cancelo una venta para recargar el inventario y los personalizados
     onVentaCancelada: () => void;
 }
 
-function Resumen({ recargar, onVentaCancelada }: ResumenProps) {
+function Resumen({ puedeEditar, recargar, onVentaCancelada }: ResumenProps) {
     const notificar = useToast();
-    const [ventas, setVentas] = useState<Venta[]>([]);
+    const [ventas, setVentas] = useState<Registro[]>([]);
     // foto de perfil de cada vendedor (por nombre de usuario)
     const [fotos, setFotos] = useState<Record<string, string | null>>({});
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState(false);
     const [version, setVersion] = useState(0);
-    const [ventaACancelar, setVentaACancelar] = useState<Venta | null>(null);
+    const [ventaACancelar, setVentaACancelar] = useState<Registro | null>(null);
     const [cancelando, setCancelando] = useState(false);
 
     useEffect(() => {
         let cancelado = false;
         (async () => {
             setError(false);
-            const [respuestaVentas, respuestaUsuarios] = await Promise.all([
-                supabase.from('Ventas').select('*').order('Fecha', { ascending: false }),
+            const [respuestaVentas, respuestaPersonalizadas, respuestaUsuarios] = await Promise.all([
+                supabase.from('Ventas').select('*'),
+                supabase.from('VentasPersonalizadas').select('*'),
                 supabase.from('Usuarios').select('Usuario, Foto'),
             ]);
             if (cancelado) return;
@@ -146,7 +172,15 @@ function Resumen({ recargar, onVentaCancelada }: ResumenProps) {
                 console.error('error al traer ventas:', respuestaVentas.error);
                 setError(true);
             } else {
-                setVentas((respuestaVentas.data ?? []) as Venta[]);
+                if (respuestaPersonalizadas.error) {
+                    console.error('error al traer ventas personalizadas:', respuestaPersonalizadas.error);
+                }
+                const normales: Registro[] = ((respuestaVentas.data ?? []) as Venta[]).map((v) => ({ ...v, tipo: 'normal' }));
+                const personalizadas = ((respuestaPersonalizadas.data ?? []) as VentaPersonalizada[]).map(desdePersonalizada);
+                // todas juntas, la mas reciente primero
+                setVentas(
+                    [...normales, ...personalizadas].sort((a, b) => new Date(b.Fecha).getTime() - new Date(a.Fecha).getTime())
+                );
             }
             // las fotos son opcionales: si fallan se muestran las iniciales
             if (respuestaUsuarios.data) {
@@ -169,13 +203,29 @@ function Resumen({ recargar, onVentaCancelada }: ResumenProps) {
     const confirmarCancelacion = async () => {
         if (!ventaACancelar) return;
         setCancelando(true);
-        const { error: errorRpc } = await supabase.rpc('cancelar_venta', { venta_id: ventaACancelar.id });
+        let mensajeError: string | null = null;
+        if (ventaACancelar.tipo === 'personalizada') {
+            const { data, error: errorBorrar } = await supabase
+                .from('VentasPersonalizadas')
+                .delete()
+                .eq('id', ventaACancelar.id)
+                .select('id');
+            if (errorBorrar) mensajeError = errorBorrar.message;
+            else if (!data || data.length === 0) mensajeError = 'no tienes permiso o la venta ya no existe';
+        } else {
+            const { error: errorRpc } = await supabase.rpc('cancelar_venta', { venta_id: ventaACancelar.id });
+            if (errorRpc) mensajeError = errorRpc.message;
+        }
         setCancelando(false);
-        if (errorRpc) {
-            notificar(`No se pudo eliminar la venta: ${errorRpc.message}`, 'error');
+        if (mensajeError) {
+            notificar(`No se pudo eliminar la venta: ${mensajeError}`, 'error');
             return;
         }
-        notificar(`Venta eliminada · ${textoPiezas(ventaACancelar.Cantidad)} regresaron al inventario`);
+        notificar(
+            ventaACancelar.tipo === 'personalizada'
+                ? 'Venta personalizada eliminada'
+                : `Venta eliminada · ${textoPiezas(ventaACancelar.Cantidad)} regresaron al inventario`
+        );
         setVentaACancelar(null);
         setVersion((v) => v + 1);
         onVentaCancelada();
@@ -256,23 +306,27 @@ function Resumen({ recargar, onVentaCancelada }: ResumenProps) {
                                     <summary>Ver cada venta ({dia.ventas.length})</summary>
                                     <ul>
                                         {dia.ventas.map((v) => (
-                                            <li key={v.id}>
+                                            <li key={claveRegistro(v)}>
                                                 <div className="detalle-info">
-                                                    <span className="detalle-producto">{v.Cantidad} × {v.Producto}</span>
+                                                    <span className="detalle-producto">
+                                                        {v.tipo === 'personalizada' ? v.Producto : `${v.Cantidad} × ${v.Producto}`}
+                                                    </span>
                                                     <small>
                                                         {formatoHora(new Date(v.Fecha))} · {v.Vendedor ?? 'Sin vendedor'}
                                                     </small>
                                                 </div>
                                                 <span className="detalle-monto">{formatoMoneda(Number(v.Monto))}</span>
-                                                <button
-                                                    type="button"
-                                                    className="btn-icono btn-eliminar"
-                                                    onClick={() => setVentaACancelar(v)}
-                                                    aria-label={`Eliminar venta de ${v.Producto}`}
-                                                    title="Eliminar venta"
-                                                >
-                                                    <IconoEliminar tamano={16} />
-                                                </button>
+                                                {(v.tipo === 'normal' || puedeEditar) && (
+                                                    <button
+                                                        type="button"
+                                                        className="btn-icono btn-eliminar"
+                                                        onClick={() => setVentaACancelar(v)}
+                                                        aria-label={`Eliminar venta de ${v.Producto}`}
+                                                        title="Eliminar venta"
+                                                    >
+                                                        <IconoEliminar tamano={16} />
+                                                    </button>
+                                                )}
                                             </li>
                                         ))}
                                     </ul>
@@ -288,13 +342,21 @@ function Resumen({ recargar, onVentaCancelada }: ResumenProps) {
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                         <h4>Eliminar venta</h4>
                         <p>
-                            ¿Eliminar la venta de <strong>{ventaACancelar.Cantidad} × {ventaACancelar.Producto}</strong> por{' '}
+                            ¿Eliminar la venta de{' '}
+                            <strong>
+                                {ventaACancelar.tipo === 'personalizada'
+                                    ? ventaACancelar.Producto
+                                    : `${ventaACancelar.Cantidad} × ${ventaACancelar.Producto}`}
+                            </strong>{' '}
+                            por{' '}
                             <strong>{formatoMoneda(Number(ventaACancelar.Monto))}</strong>?
                         </p>
                         <p className="aviso-regreso">
-                            {ventaACancelar.ProductoId !== null
-                                ? `Las ${textoPiezas(ventaACancelar.Cantidad)} regresarán al inventario.`
-                                : 'El producto ya no existe en el inventario, así que no se regresará stock.'}
+                            {ventaACancelar.tipo === 'personalizada'
+                                ? 'Es un producto sobre pedido, no afecta el inventario.'
+                                : ventaACancelar.ProductoId !== null
+                                    ? `Las ${textoPiezas(ventaACancelar.Cantidad)} regresarán al inventario.`
+                                    : 'El producto ya no existe en el inventario, así que no se regresará stock.'}
                         </p>
                         <div className="modal-actions">
                             <button type="button" className="btn-cancelar" onClick={() => setVentaACancelar(null)} disabled={cancelando}>
